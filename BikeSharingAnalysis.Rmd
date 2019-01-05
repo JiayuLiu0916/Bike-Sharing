@@ -1,0 +1,169 @@
+---
+title: "project637"
+author: "Jiayu Liu, Lan Sun, Azra Pita"
+date: "September 18, 2018"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- read.csv("newdata.csv",header = T)
+attach(data)
+head(data)
+```
+
+```{r,fig.width=8, fig.height=8}
+m1 <- lm(cnt~temp+atemp+hum+windspeed+factor(mnth)+factor(hr)+factor(holiday)+factor(workingday)+factor(weekday)+factor(weathersit))
+par(mfrow=c(2,2))
+plot(m1)
+
+```
+
+```{r}
+summary(m1)
+```
+
+```{r}
+residuals<-m1$residuals
+plot(hr,residuals,main="residuals against hours")
+abline(h=0)
+
+```
+
+```{r}
+m2 <- lm(cnt~temp+atemp+hum+windspeed+factor(mnth)+factor(hr)+factor(holiday)+factor(workingday)+factor(weekday)+factor(weathersit)+factor(hr)*factor(weekday))
+par(mfrow = c(2,2))
+plot(m2)
+```
+
+```{r}
+anova(m2,m1)
+```
+
+```{r}
+residuals2<-m2$residuals
+plot(hr,residuals2,main="residuals against hours")
+abline(h=0)
+```
+
+```{r}
+summary(m2)
+```
+
+```{r}
+null<-lm(cnt~1) 
+full<-lm(cnt~temp+atemp+hum+windspeed+factor(mnth)+factor(hr)+factor(holiday)+factor(weathersit)+factor(workingday)+factor(hr)*factor(workingday))
+stepwise1<-step(null,scope=list(lower=null,upper=full),direction="both")
+```
+
+```{r}
+library(car)
+vif(stepwise1)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(stepwise1)
+```
+
+```{r}
+library(MASS)
+bc<-boxcox(stepwise1)
+```
+
+```{r}
+la<-bc$x
+likelihood<-bc$y
+bestla<-la[which(likelihood==max(likelihood))]
+bestla
+
+```
+
+```{r}
+m3<-lm(cnt^bestla ~ atemp + hum + windspeed + factor(weathersit) + factor(mnth) + factor(holiday) + factor(hr) + factor(weekday) + factor(hr):factor(weekday))
+par(mfrow=c(2,2))
+plot(m3)
+```
+
+```{r}
+summary(m3)
+```
+
+```{r}
+day <- read.csv("dn.csv",header = T)
+attach(day)
+detach(day)
+```
+
+```{r}
+m4<-lm(cnt ~ atemp + hum + windspeed + factor(weathersit) + factor(mnth) + factor(holiday) + factor(hr) + factor(weekday) + factor(hr):factor(weekday))
+par(mfrow=c(2,2))
+plot(m4)
+```
+
+```{r}
+cnt_new = (cnt^0.2626263-mean(cnt^0.2626263))/sd(cnt^0.2626263)
+m5<-lm(cnt_new ~ atemp + hum + windspeed + factor(weathersit) + factor(mnth) + factor(holiday) + factor(hr) + factor(weekday) + factor(hr):factor(weekday))
+par(mfrow=c(2,2))
+plot(m5)
+```
+
+```{r}
+data$weathersit <- as.factor(data$weathersit)
+data$hr <- as.factor(data$hr)
+data$weekday <- as.factor(data$weekday)
+data$mnth <- as.factor(data$mnth)
+data$holiday <- as.factor(holiday)
+
+averagehcount <-data.frame(atemp=0.53,hum=0.60,windspeed=0.20, weathersit=1, mnth=4, holiday=0,hr=23, weekday=1)
+confidence <- predict(m3,averagehcount,interval="confidence",level=.95) 
+conf1<-confidence^(1/bestla)
+conf1
+```
+    fit       lwr      upr
+0 45.20623 36.71661 55.06224
+1 25.11129 19.66153 31.60123
+2 13.83809 10.39028 18.06389
+3 4.91423 3.295922 7.054247
+4 8.141673 5.832981 11.06289
+5 35.86682 28.7078 44.26321
+6 120.3971 102.4842 140.519
+7 336.7474 297.964 379.1318
+8 534.8586 480.1733 594.0044
+9 296.9332 261.771 335.4611
+10 183.6271 159.0898 210.848
+11 186.8947 161.965 214.5457
+12 266.6787 234.1474 302.4269
+13 261.9066 229.771 297.2404
+14 240.5721 210.3862 273.8372
+15 233.25 203.8049 265.7189
+16 328.5103 290.4185 370.1652
+17 591.2435 532.2808 654.8877
+18 571.4557 514.1315 633.3603
+19 454.7409 406.4624 507.1213
+20 298.572 263.3118 337.1971
+21 226.534 197.7899 258.2468
+22 140.7371 120.6049 163.2448
+23 82.07594 68.70748 97.27088
+
+```{r}
+averagehcount <-data.frame(atemp=0.53,hum=0.60,windspeed=0.20, weathersit=1, mnth=4, holiday=0,hr=17, weekday=6)
+confidence <- predict(m3,averagehcount,interval="confidence",level=.95) 
+conf1<-confidence^(1/bestla)
+conf1
+```
+    fit      lwr      upr
+0 413.5928 369.0627 461.9646
+1 591.2435 532.2808 654.8877
+2 638.6954 576.8049 705.3499
+3 611.7108 553.9814 673.7593
+4 673.0824 608.8175 742.2159
+5 626.3431 565.0504 692.404
+6 438.0608 390.7614 489.4534
+
+
